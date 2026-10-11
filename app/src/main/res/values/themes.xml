@@ -1,0 +1,7 @@
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light" />
+    <style name="ResolveTheme" parent="android:Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:windowCloseOnTouchOutside">false</item>
+    </style>
+    <color name="icon_bg">#1B1B1F</color>
+</resources>
