@@ -3,6 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Release signing comes from the environment (set by CI); without it we fall back to the debug key.
+val releaseKeystore = System.getenv("SPOTLESS_KEYSTORE")?.let(::file)?.takeIf { it.isFile }
+
 android {
     namespace = "work.silly.spotless"
     compileSdk = 35
@@ -11,16 +14,26 @@ android {
         applicationId = "work.silly.spotless"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // Overridable from the command line: -PversionCode=… -PversionName=…
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (findProperty("versionName") as String?) ?: "0.1.0"
+    }
+
+    signingConfigs {
+        if (releaseKeystore != null) create("release") {
+            storeFile = releaseKeystore
+            storePassword = System.getenv("SPOTLESS_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SPOTLESS_KEY_ALIAS")
+            keyPassword = System.getenv("SPOTLESS_KEY_PASSWORD") ?: System.getenv("SPOTLESS_KEYSTORE_PASSWORD")
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Sideload build: signed with the debug key unless you set up your own.
-            signingConfig = signingConfigs.getByName("debug")
+            // Sideload build: signed with the debug key unless a release keystore is configured.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 
