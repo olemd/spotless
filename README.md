@@ -2,6 +2,8 @@
 
 Åpner Spotify-lenker (spor, album, spillelister) i YouTube Music. Krever verken Spotify-konto eller Google-innlogging.
 
+> **Status:** Virker per oktober 2026. Appen bygger på uoffisielle grensesnitt hos både Spotify og YouTube Music, og vil sannsynligvis trenge oppdateringer etter hvert som de endrer seg. Se [Når det slutter å virke](#når-det-slutter-å-virke).
+
 ## Slik virker det
 
 1. **Fange lenken:** `open.spotify.com`, `spotify.link`, `spoti.fi`, `spotify:`-URI-er, eller *Del → Spotless*.
@@ -33,6 +35,19 @@
 - En 50-spors liste tar ~10 s første gang; gjentatte spor hentes fra cache.
 - Artist- og podkastlenker gir et YT Music-søk, ikke en 1:1-oversettelse.
 
+## Når det slutter å virke
+
+Kjør `./gradlew testDebugUnitTest -Dlive=true --rerun`. Testene viser hvilken del som brakk:
+
+| Symptom | Sannsynlig årsak | Hvor du fikser |
+|---|---|---|
+| Feilmelding om `__NEXT_DATA__` eller tom tracklist | Spotify har endret embed-siden | `EmbedParser.kt` |
+| Ingen treff, eller HTTP-feil fra YT Music | InnerTube-svaret eller klientversjonen er endret | `YtmParser.kt`, `YtmClient.kt` |
+| Matcher feil sang | Scoringen trenger justering | `Matcher.kt` |
+| Kø åpnes ikke, bare første spor | `watch_videos` er endret eller sperret | `Resolver.anonymousListId` |
+
+Offline-testene kjører mot lagrede svar i `app/src/test/resources/`. Når formatene endrer seg, bytter du ut fixturene med nye svar og oppdaterer parserne til testene går gjennom.
+
 ## Bygg
 
 ```sh
@@ -43,3 +58,7 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 ```
 
 Release-bygget signeres med debug-nøkkelen (for sideload). Sett opp din egen `signingConfig` om du vil distribuere det.
+
+## Lisens
+
+MIT, se [LICENSE](LICENSE).
