@@ -3,14 +3,14 @@ package work.silly.spotless
 import org.json.JSONObject
 
 /**
- * Anonymt søk mot YT Music sitt interne API (InnerTube), samme som nettsiden bruker.
- * Uoffisielt: Google kan endre det. Klientversjonen hentes fra music.youtube.com og
- * caches av kalleren; en hardkodet versjon brukes hvis det feiler.
+ * Anonymous search against YT Music's internal API (InnerTube), the same one the website uses.
+ * Unofficial: Google can change it. The client version is scraped from music.youtube.com and
+ * cached by the caller; a hard-coded version is used if that fails.
  */
 class YtmClient(
     private val http: Http,
     private val versionProvider: () -> String? = { null },
-    private val gl: String = "NO",
+    private val gl: String = "US",
 ) {
     fun search(query: String): List<Candidate> {
         val version = versionProvider() ?: FALLBACK_VERSION
@@ -32,14 +32,14 @@ class YtmClient(
                 "Cookie" to CONSENT_COOKIE,
             ),
         )
-        if (r.code != 200) throw IllegalStateException("YT Music-søk feilet: HTTP ${r.code}")
+        if (r.code != 200) throw IllegalStateException("YT Music search failed: HTTP ${r.code}")
         return YtmParser.parse(r.body)
     }
 
     companion object {
-        /** Verifisert 2026-10-11. Oppdateres automatisk fra nettsiden ved oppstart. */
+        /** Verified 2026-10-11. Refreshed automatically from the website at runtime. */
         const val FALLBACK_VERSION = "1.20261006.10.00"
-        /** "Avslå alle" på Googles samtykkeside; uten den får EØS-brukere en consent-side i stedet for HTML. */
+        /** "Reject all" on Google's consent page; without it EEA users get a consent page instead of HTML. */
         const val CONSENT_COOKIE = "SOCS=CAI"
         private val versionRe = Regex(""""INNERTUBE_CLIENT_VERSION":"([^"]+)"""")
 

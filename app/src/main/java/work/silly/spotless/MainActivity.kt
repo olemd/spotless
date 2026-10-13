@@ -14,7 +14,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 
-/** Oppsett: lenkehåndtering, innstillinger, cache og et testfelt. */
+/** Setup: link handling, settings, cache and a test field. */
 class MainActivity : Activity() {
     private lateinit var prefs: Prefs
     private lateinit var cache: SqliteCache
@@ -36,39 +36,39 @@ class MainActivity : Activity() {
         fun body(s: String) = root.addView(TextView(this).apply { text = s; textSize = 14f })
         fun button(s: String, f: () -> Unit) = root.addView(Button(this).apply { text = s; setOnClickListener { f() } })
 
-        heading("1. La appen åpne Spotify-lenker")
-        body("Android 12+ lar ikke en app ta over open.spotify.com automatisk. Trykk under, velg " +
-            "«Legg til lenker» og huk av open.spotify.com, spotify.link og spoti.fi.\n\n" +
-            "Har du Spotify installert, må du skru av det samme for Spotify først.\n\n" +
-            "«Del → Spotless» fungerer uansett, uten oppsett.")
-        button("Åpne «Åpne som standard»") { openByDefaultSettings() }
+        heading("1. Let the app open Spotify links")
+        body("Android 12+ doesn't let an app take over open.spotify.com automatically. Tap below, choose " +
+            "“Add link” and tick open.spotify.com, spotify.link and spoti.fi.\n\n" +
+            "If you have Spotify installed, turn the same thing off for Spotify first.\n\n" +
+            "“Share → Spotless” always works, no setup needed.")
+        button("Open “Open by default”") { openByDefaultSettings() }
 
-        heading("2. Innstillinger")
-        body("Maks antall spor i køen (1–50, YouTube-grense 50):")
+        heading("2. Settings")
+        body("Max tracks in the queue (1–50, YouTube limit is 50):")
         val maxQ = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(prefs.maxQueue.toString())
         }
         root.addView(maxQ)
-        body("Region for søk (landkode, påvirker tilgjengelige utgivelser):")
+        body("Search region (country code, affects which releases are available):")
         val region = EditText(this).apply { setText(prefs.region) }
         root.addView(region)
-        button("Lagre") {
+        button("Save") {
             maxQ.text.toString().toIntOrNull()?.let { prefs.maxQueue = it }
             region.text.toString().trim().takeIf { it.length == 2 }?.let { prefs.region = it }
             maxQ.setText(prefs.maxQueue.toString()); region.setText(prefs.region)
-            Toast.makeText(this, "Lagret", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         }
 
         heading("3. Cache")
         cacheInfo = TextView(this)
         root.addView(cacheInfo)
-        button("Tøm cache") { cache.clear(); refreshCache() }
+        button("Clear cache") { cache.clear(); refreshCache() }
 
         heading("Test")
-        val test = EditText(this).apply { hint = "Lim inn Spotify-lenke" }
+        val test = EditText(this).apply { hint = "Paste a Spotify link" }
         root.addView(test)
-        button("Oversett") {
+        button("Translate") {
             startActivity(Intent(this, ResolveActivity::class.java)
                 .setAction(Intent.ACTION_SEND)
                 .putExtra(Intent.EXTRA_TEXT, test.text.toString()))
@@ -83,7 +83,7 @@ class MainActivity : Activity() {
     }
 
     private fun refreshCache() {
-        cacheInfo.text = "${cache.count()} matchede spor lagret"
+        cacheInfo.text = "${cache.count()} matched tracks stored"
     }
 
     private fun openByDefaultSettings() {

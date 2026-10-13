@@ -19,10 +19,10 @@ data class SpotifyEntity(
 )
 
 /**
- * Leser den offentlige embed-siden (open.spotify.com/embed/...).
- * Den er en Next.js-side med hele datamodellen i <script id="__NEXT_DATA__">.
- * Uoffisielt: hvis Spotify endrer formatet, er det her det brekker.
- * Kjent begrensning: spillelister kuttes på 100 spor.
+ * Reads the public embed page (open.spotify.com/embed/...).
+ * It is a Next.js page with the whole data model in <script id="__NEXT_DATA__">.
+ * Unofficial: if Spotify changes the format, this is where it breaks.
+ * Known limitation: playlists are truncated at 100 tracks.
  */
 object EmbedParser {
     private val nextData = Regex(
@@ -34,11 +34,11 @@ object EmbedParser {
 
     fun parse(html: String): SpotifyEntity {
         val raw = nextData.find(html)?.groupValues?.get(1)
-            ?: throw FormatChanged("Fant ikke __NEXT_DATA__ i embed-siden")
+            ?: throw FormatChanged("Could not find __NEXT_DATA__ in the embed page")
         val entity = JSONObject(raw)
             .optJSONObject("props")?.optJSONObject("pageProps")
             ?.optJSONObject("state")?.optJSONObject("data")?.optJSONObject("entity")
-            ?: throw FormatChanged("Fant ikke entity i __NEXT_DATA__")
+            ?: throw FormatChanged("Could not find entity in __NEXT_DATA__")
 
         val type = entity.optString("type")
         val name = entity.optString("name").ifEmpty { entity.optString("title") }
@@ -49,7 +49,7 @@ object EmbedParser {
                 val list = entity.getJSONArray("trackList")
                 (0 until list.length()).mapNotNull { i ->
                     val t = list.getJSONObject(i)
-                    // Lokale filer o.l. har ingen spilbar track-URI; hopp over.
+                    // Local files etc. have no playable track URI; skip them.
                     val uri = t.optString("uri")
                     if (!uri.startsWith("spotify:track:")) return@mapNotNull null
                     SourceTrack(
@@ -71,8 +71,8 @@ object EmbedParser {
         return SpotifyEntity(type, name, subtitle, tracks)
     }
 
-    // Embed bruker ", " mellom artister. Artistnavn med komma blir splittet feil,
-    // men det påvirker bare søkestrengen marginalt.
+    // The embed uses ", " between artists. Artist names containing a comma get split
+    // incorrectly, but that only affects the search string marginally.
     private fun splitArtists(s: String) =
         s.split(", ").map { it.trim() }.filter { it.isNotEmpty() }
 }

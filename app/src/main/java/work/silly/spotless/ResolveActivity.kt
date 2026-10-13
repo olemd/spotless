@@ -14,8 +14,8 @@ import android.widget.TextView
 import android.widget.Toast
 
 /**
- * Tar imot Spotify-lenker (VIEW og "Del"), oversetter dem og sender videre til YT Music.
- * Vises som en liten dialog med fremdrift, og lukker seg selv.
+ * Receives Spotify links (VIEW and "Share"), translates them and hands off to YT Music.
+ * Shown as a small dialog with progress, and closes itself.
  */
 class ResolveActivity : Activity() {
     private lateinit var status: TextView
@@ -33,7 +33,7 @@ class ResolveActivity : Activity() {
             Intent.ACTION_VIEW -> intent.dataString
             else -> null
         }
-        if (text.isNullOrBlank()) return fail("Ingen lenke mottatt", null)
+        if (text.isNullOrBlank()) return fail("No link received", null)
 
         val resolver = Ytm.resolver(this)
         Thread {
@@ -62,7 +62,7 @@ class ResolveActivity : Activity() {
         try {
             startActivity(Intent(view).setPackage(Ytm.PACKAGE))
         } catch (_: ActivityNotFoundException) {
-            // YT Music ikke installert (eller håndterer ikke denne URL-en): la systemet velge.
+            // YT Music not installed (or doesn't handle this URL): let the system choose.
             startActivity(view)
         }
         finish()
@@ -73,19 +73,19 @@ class ResolveActivity : Activity() {
         status.text = msg
         actions.removeAllViews()
         if (originalUrl != null) actions.addView(Button(this).apply {
-            text = "Åpne i nettleser"
+            text = "Open in browser"
             setOnClickListener { openElsewhere(originalUrl) }
         })
         actions.addView(Button(this).apply {
-            text = "Lukk"
+            text = "Close"
             setOnClickListener { finish() }
         })
     }
 
-    /** Åpner originalen uten å havne i denne appen igjen. */
+    /** Opens the original without ending up in this app again. */
     private fun openElsewhere(url: String) {
         val view = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        val chooser = Intent.createChooser(view, "Åpne med").putExtra(
+        val chooser = Intent.createChooser(view, "Open with").putExtra(
             Intent.EXTRA_EXCLUDE_COMPONENTS,
             arrayOf(ComponentName(this, ResolveActivity::class.java)),
         )
@@ -97,7 +97,7 @@ class ResolveActivity : Activity() {
         val pad = (20 * resources.displayMetrics.density).toInt()
         spinner = ProgressBar(this)
         status = TextView(this).apply {
-            text = "Starter …"
+            text = "Starting …"
             textSize = 16f
             setPadding(pad, 0, 0, 0)
         }
@@ -111,7 +111,7 @@ class ResolveActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END
             addView(Button(this@ResolveActivity).apply {
-                text = "Avbryt"
+                text = "Cancel"
                 setOnClickListener { finish() }
             })
         }

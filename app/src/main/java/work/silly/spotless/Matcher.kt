@@ -5,17 +5,17 @@ import java.text.Normalizer
 data class Match(val candidate: Candidate, val score: Double)
 
 /**
- * Velger beste YT Music-treff for et Spotify-spor.
+ * Picks the best YT Music hit for a Spotify track.
  *
- * Uten ISRC (Spotify skjuler det nå) er dette heuristikk:
- *  - tittellikhet (token-overlapp, etter normalisering)  — hovedsignal
- *  - artist nevnt i undertittelen                          — sterkt signal
- *  - varighet innenfor noen sekunder                       — skiller remaster/live/edit
- *  - type: ATV > OMV > UGC; podcaster forkastes
- *  - straff for "sped up", "live", "cover" osv. som ikke står i originaltittelen
+ * Without ISRC (Spotify now hides it) this is heuristic:
+ *  - title similarity (token overlap, after normalisation)  — main signal
+ *  - artist mentioned in the subtitle                        — strong signal
+ *  - duration within a few seconds                           — separates remaster/live/edit
+ *  - type: ATV > OMV > UGC; podcasts are discarded
+ *  - penalty for "sped up", "live", "cover" etc. not present in the original title
  */
 object Matcher {
-    /** Under dette regnes det som ingen match, og vi faller tilbake til et vanlig søk. */
+    /** Below this it counts as no match, and we fall back to a plain search. */
     const val MIN_SCORE = 3.0
 
     private val noiseWords = listOf(
@@ -36,7 +36,7 @@ object Matcher {
         val candSub = norm(c.subtitle)
         val candAll = "$candTitle $candSub"
 
-        // Både med og uten pynt: UGC-titler som "Artist - Sang (1989)" mister sangen ved stripping.
+        // Both with and without decorations: UGC titles like "Artist - Song (1989)" lose the song when stripped.
         val titleSim = maxOf(tokenSim(srcTitle, candTitle), tokenSim(srcTitle, norm(stripDecorations(c.title))))
         if (titleSim < 0.5) return 0.0
         var s = titleSim * 4 // 0–4
@@ -84,7 +84,7 @@ object Matcher {
             .replace(Regex("\\s+"), " ")
             .trim()
 
-    /** Andel av kildens tokens som finnes i kandidaten, litt straffet hvis kandidaten har mye ekstra. */
+    /** Share of the source tokens found in the candidate, slightly penalised if the candidate has a lot extra. */
     internal fun tokenSim(a: String, b: String): Double {
         val ta = a.split(' ').filter { it.isNotEmpty() }.toSet()
         val tb = b.split(' ').filter { it.isNotEmpty() }.toSet()

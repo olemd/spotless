@@ -4,8 +4,9 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import java.util.Locale
 
-/** Spotify track-ID → YouTube video-ID. Samme sang i flere spillelister søkes bare opp én gang. */
+/** Spotify track ID → YouTube video ID. The same song across playlists is only looked up once. */
 class SqliteCache(ctx: Context) : SQLiteOpenHelper(ctx, "matches.db", null, 1), MatchCache {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE m (spotify_id TEXT PRIMARY KEY, video_id TEXT NOT NULL, ts INTEGER NOT NULL)")
@@ -30,21 +31,23 @@ class SqliteCache(ctx: Context) : SQLiteOpenHelper(ctx, "matches.db", null, 1), 
     fun clear() = writableDatabase.execSQL("DELETE FROM m")
 }
 
-/** Innstillinger med fornuftige defaults. */
+/** Settings with sensible defaults. */
 class Prefs(ctx: Context) {
     private val p = ctx.getSharedPreferences("spotless", Context.MODE_PRIVATE)
 
-    /** 1–50. YouTube sin anonyme kø tar maks 50. */
+    /** 1–50. YouTube's anonymous queue takes at most 50. */
     var maxQueue: Int
         get() = p.getInt("max_queue", 50).coerceIn(1, 50)
         set(v) = p.edit().putInt("max_queue", v.coerceIn(1, 50)).apply()
 
-    /** Land for YT Music-søket (påvirker hvilke utgivelser som er tilgjengelige). */
+    /** Country for the YT Music search (affects which releases are available). Defaults to the device locale. */
     var region: String
-        get() = p.getString("region", "NO")!!
+        get() = p.getString("region", null) ?: defaultRegion()
         set(v) = p.edit().putString("region", v.uppercase().take(2)).apply()
 
-    /** Henter YT Music-klientversjon på nytt maks én gang i uka. */
+    private fun defaultRegion() = Locale.getDefault().country.takeIf { it.length == 2 } ?: "US"
+
+    /** Re-fetches the YT Music client version at most once a week. */
     fun ytmVersion(http: Http): String? {
         val age = System.currentTimeMillis() - p.getLong("ytm_version_ts", 0)
         if (age > 7L * 24 * 3600 * 1000) {

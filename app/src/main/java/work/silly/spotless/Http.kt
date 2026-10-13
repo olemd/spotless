@@ -5,7 +5,7 @@ import java.net.URL
 
 data class HttpResponse(val code: Int, val body: String, val finalUrl: String, val location: String?)
 
-/** Tynt lag over HttpURLConnection. Ingen avhengigheter, fungerer både på Android og JVM (tester). */
+/** Thin layer over HttpURLConnection. No dependencies; works on both Android and the JVM (tests). */
 open class Http(
     private val userAgent: String = DEFAULT_UA,
     private val timeoutMs: Int = 10_000,

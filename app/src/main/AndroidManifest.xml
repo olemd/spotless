@@ -3,7 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Android 11+: lar oss se om YT Music er installert når vi sender intent med setPackage. -->
+    <!-- Android 11+: lets us see whether YT Music is installed when sending an intent with setPackage. -->
     <queries>
         <package android:name="com.google.android.apps.youtube.music" />
     </queries>
@@ -32,7 +32,7 @@
             android:taskAffinity=""
             android:theme="@style/ResolveTheme">
 
-            <!-- Vanlige lenker. Ikke verifisert (vi eier ikke domenet): må slås på manuelt. -->
+            <!-- Regular links. Not verified (we don't own the domain): must be enabled manually. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -51,7 +51,7 @@
                 <data android:scheme="spotify" />
             </intent-filter>
 
-            <!-- Del → Spotless -->
+            <!-- Share → Spotless -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

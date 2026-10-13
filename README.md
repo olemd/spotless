@@ -1,64 +1,63 @@
 # Spotless
 
-Åpner Spotify-lenker (spor, album, spillelister) i YouTube Music. Krever verken Spotify-konto eller Google-innlogging.
+Opens Spotify links (tracks, albums, playlists) in YouTube Music. No Spotify account or Google sign-in required.
 
-> **Status:** Virker per oktober 2026. Appen bygger på uoffisielle grensesnitt hos både Spotify og YouTube Music, og vil sannsynligvis trenge oppdateringer etter hvert som de endrer seg. Se [Når det slutter å virke](#når-det-slutter-å-virke).
+> **Status:** Works as of October 2026. The app relies on unofficial interfaces at both Spotify and YouTube Music, and will likely need updates as they change. See [When it stops working](#when-it-stops-working).
 
-## Slik virker det
+## How it works
 
-1. **Fange lenken:** `open.spotify.com`, `spotify.link`, `spoti.fi`, `spotify:`-URI-er, eller *Del → Spotless*.
-2. **Lese Spotify:** Den offentlige embed-siden (`open.spotify.com/embed/...`) har tittel, artister og varighet i `__NEXT_DATA__`. Web API-et brukes ikke, siden det krever Premium i dev mode.
-3. **Matche:** Anonymt søk mot YT Music sitt interne API (InnerTube, `WEB_REMIX`). Treffene scores på tittellikhet, artist, varighet og type (lydspor > offisiell video > brukeropplasting), med straff for «sped up», «live», «cover» o.l.
-4. **Åpne:** Ett spor åpnes som `music.youtube.com/watch?v=…`. Flere spor går via `youtube.com/watch_videos?video_ids=…`, som gir en anonym kø-ID (`TLGG…`) som åpnes i YT Music.
+1. **Catch the link:** `open.spotify.com`, `spotify.link`, `spoti.fi`, `spotify:` URIs, or *Share → Spotless*.
+2. **Read Spotify:** The public embed page (`open.spotify.com/embed/...`) contains title, artists and duration in `__NEXT_DATA__`. The Web API is not used, since it requires Premium in development mode.
+3. **Match:** Anonymous search against YT Music's internal API (InnerTube, `WEB_REMIX`). Results are scored on title similarity, artist, duration and type (audio track > official video > user upload), with penalties for "sped up", "live", "cover" and similar.
+4. **Open:** A single track opens as `music.youtube.com/watch?v=…`. Multiple tracks go through `youtube.com/watch_videos?video_ids=…`, which yields an anonymous queue ID (`TLGG…`) that opens in YT Music.
 
-## Oppsett på telefonen
+## Setup on the phone
 
-1. Installer `spotless.apk` (sideload).
-2. Åpne appen og trykk **Åpne «Åpne som standard»**. Velg **Legg til lenker** og huk av alle tre domenene. Android 12+ krever dette for apper som ikke eier domenet.
-3. Har du Spotify installert, må du skru av det samme for Spotify.
+1. Install `spotless.apk` (sideload).
+2. Open the app and tap **Open "Open by default"**. Choose **Add link** and tick all three domains. Android 12+ requires this for apps that don't own the domain.
+3. If you have Spotify installed, turn the same setting off for Spotify.
 
-*Del → Spotless* fungerer uten noe av dette.
+*Share → Spotless* works without any of this.
 
-## Innstillinger (med defaults)
+## Settings (with defaults)
 
-| Innstilling | Default | Merknad |
+| Setting | Default | Note |
 |---|---|---|
-| Maks kø | 50 | YouTube sin anonyme kø tar maks 50 |
-| Region | NO | Påvirker hvilke utgivelser som finnes |
-| Cache | på | Spotify-ID → video-ID i SQLite; kan tømmes i appen |
+| Max queue | 50 | YouTube's anonymous queue takes at most 50 |
+| Region | device locale (fallback `US`) | Affects which releases are available |
+| Cache | on | Spotify ID → video ID in SQLite; can be cleared in the app |
 
-## Kjente begrensninger
+## Known limitations
 
-- **Uoffisielt hele veien:** Både Spotify-embed og InnerTube kan endres uten varsel. Parserne er isolert (`EmbedParser`, `YtmParser`) og har tester mot lagrede svar.
-- Spillelister kuttes på **100 spor** (embed) og deretter **50** (kø).
-- Uten ISRC er matching heuristikk. Testet: 10/10 på et album, 49/50 på en 50-spors pop-liste.
-- En 50-spors liste tar ~10 s første gang; gjentatte spor hentes fra cache.
-- Artist- og podkastlenker gir et YT Music-søk, ikke en 1:1-oversettelse.
+- Playlists are truncated at **100 tracks** (embed) and then **50** (queue).
+- Without ISRC, matching is heuristic. Tested: 10/10 on an album, 49/50 on a 50-track pop playlist.
+- A 50-track playlist takes ~10 s the first time; repeated tracks come from the cache.
+- Artist and podcast links give a YT Music search, not a 1:1 translation.
 
-## Når det slutter å virke
+## When it stops working
 
-Kjør `./gradlew testDebugUnitTest -Dlive=true --rerun`. Testene viser hvilken del som brakk:
+Run `./gradlew testDebugUnitTest -Dlive=true --rerun`. The tests show which part broke:
 
-| Symptom | Sannsynlig årsak | Hvor du fikser |
+| Symptom | Likely cause | Where to fix |
 |---|---|---|
-| Feilmelding om `__NEXT_DATA__` eller tom tracklist | Spotify har endret embed-siden | `EmbedParser.kt` |
-| Ingen treff, eller HTTP-feil fra YT Music | InnerTube-svaret eller klientversjonen er endret | `YtmParser.kt`, `YtmClient.kt` |
-| Matcher feil sang | Scoringen trenger justering | `Matcher.kt` |
-| Kø åpnes ikke, bare første spor | `watch_videos` er endret eller sperret | `Resolver.anonymousListId` |
+| Error about `__NEXT_DATA__` or empty track list | Spotify changed the embed page | `EmbedParser.kt` |
+| No matches, or HTTP errors from YT Music | InnerTube response or client version changed | `YtmParser.kt`, `YtmClient.kt` |
+| Matches the wrong song | Scoring needs tuning | `Matcher.kt` |
+| Queue doesn't open, only the first track | `watch_videos` changed or got blocked | `Resolver.anonymousListId` |
 
-Offline-testene kjører mot lagrede svar i `app/src/test/resources/`. Når formatene endrer seg, bytter du ut fixturene med nye svar og oppdaterer parserne til testene går gjennom.
+The offline tests run against recorded responses in `app/src/test/resources/`. When the formats change, replace the fixtures with fresh responses and update the parsers until the tests pass.
 
-## Bygg
+## Build
 
 ```sh
 echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew assembleRelease                         # app/build/outputs/apk/release/
-./gradlew testDebugUnitTest                       # offline-tester mot fixtures
-./gradlew testDebugUnitTest -Dlive=true --rerun   # ende-til-ende mot ekte tjenester
+./gradlew testDebugUnitTest                       # offline tests against fixtures
+./gradlew testDebugUnitTest -Dlive=true --rerun   # end-to-end against real services
 ```
 
-Release-bygget signeres med debug-nøkkelen (for sideload). Sett opp din egen `signingConfig` om du vil distribuere det.
+The release build is signed with the debug key (for sideloading). Set up your own `signingConfig` if you want to distribute it.
 
-## Lisens
+## License
 
-MIT, se [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

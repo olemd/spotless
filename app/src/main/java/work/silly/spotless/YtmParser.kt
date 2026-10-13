@@ -6,9 +6,9 @@ import org.json.JSONObject
 data class Candidate(
     val videoId: String,
     val title: String,
-    /** Alt etter tittelen, f.eks. "Song • Rick Astley • Whenever You Need Somebody • 3:34". */
+    /** Everything after the title, e.g. "Song • Rick Astley • Whenever You Need Somebody • 3:34". */
     val subtitle: String,
-    /** MUSIC_VIDEO_TYPE_ATV (rent lydspor), _OMV (offisiell video), _UGC, _PODCAST_EPISODE ... */
+    /** MUSIC_VIDEO_TYPE_ATV (audio track), _OMV (official video), _UGC, _PODCAST_EPISODE ... */
     val videoType: String?,
 ) {
     val durationSec: Int? get() = durationRe.findAll(subtitle).lastOrNull()?.let {
@@ -22,9 +22,9 @@ data class Candidate(
 }
 
 /**
- * Tolker svaret fra music.youtube.com/youtubei/v1/search (InnerTube, WEB_REMIX).
- * Går rekursivt gjennom svaret i stedet for å anta en fast sti, fordi
- * Google flytter seksjoner rundt oftere enn de endrer selve item-rendererne.
+ * Parses the response from music.youtube.com/youtubei/v1/search (InnerTube, WEB_REMIX).
+ * Walks the response recursively instead of assuming a fixed path, because
+ * Google moves sections around more often than it changes the item renderers themselves.
  */
 object YtmParser {
     private val videoTypeRe = Regex("MUSIC_VIDEO_TYPE_[A-Z_]+")

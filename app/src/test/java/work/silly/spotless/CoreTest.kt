@@ -15,7 +15,7 @@ class CoreTest {
         for (s in listOf(
             "https://open.spotify.com/track/$id?si=abc",
             "https://open.spotify.com/intl-no/track/$id",
-            "Hør på denne! https://open.spotify.com/track/$id?si=x&utm_source=copy-link",
+            "Check this out! https://open.spotify.com/track/$id?si=x&utm_source=copy-link",
             "spotify:track:$id",
         )) {
             val p = SpotifyLink.parse(s) as ParsedLink.Direct
@@ -50,7 +50,7 @@ class CoreTest {
     @Test fun parsesYtmSearch() {
         val c = YtmParser.parse(res("ytm_rick.json"))
         assertTrue(c.any { it.videoId == "dQw4w9WgXcQ" && it.videoType == "MUSIC_VIDEO_TYPE_OMV" })
-        // Toppkortet ("Sped up") skal også parses, med varighet fra undertittelen.
+        // The top card ("Sped up") must also be parsed, with duration from the subtitle.
         val card = c.first { it.videoId == "nkdwbbA_JFs" }
         assertEquals(164, card.durationSec)
     }
@@ -65,7 +65,7 @@ class CoreTest {
         val src = SourceTrack("x", "Stop The Wedding!", listOf("Ashe"), 198840)
         val cands = YtmParser.parse(res("ytm_ashe.json"))
         val m = Matcher.best(src, cands)
-        assertNotNull("ingen match blant: " + cands.joinToString { "${it.title} | ${it.subtitle}" }, m)
+        assertNotNull("no match among: " + cands.joinToString { "${it.title} | ${it.subtitle}" }, m)
         println("Ashe -> ${m!!.candidate} score=${m.score}")
     }
 
@@ -86,11 +86,11 @@ class CoreTest {
         val r = Resolver(http, YtmClient(http, { YtmClient.fetchCurrentVersion(http) }))
         val t0 = System.currentTimeMillis()
         val out = r.resolve("https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M")
-        println("$out på ${System.currentTimeMillis() - t0} ms")
+        println("$out in ${System.currentTimeMillis() - t0} ms")
         assertTrue(out is Outcome.Open)
     }
 
-    /** Ende-til-ende mot ekte tjenester: ./gradlew test -Dlive=true */
+    /** End-to-end against real services: ./gradlew testDebugUnitTest -Dlive=true --rerun */
     @Test fun liveAlbum() {
         assumeTrue(System.getProperty("live") == "true")
         val http = Http()
@@ -99,7 +99,7 @@ class CoreTest {
         val e = EmbedParser.parse(http.get(SpotifyRef("album", "6N9PS4QXF1D0OWPk0Sxtb4").embedUrl).body)
         for (t in e.tracks) {
             val m = Matcher.best(t, ytm.search(t.query))
-            println("%-40s -> %s".format(t.title.take(40), m?.let { "${it.candidate.title} | ${it.candidate.subtitle} [%.1f]".format(it.score) } ?: "INGEN"))
+            println("%-40s -> %s".format(t.title.take(40), m?.let { "${it.candidate.title} | ${it.candidate.subtitle} [%.1f]".format(it.score) } ?: "NONE"))
         }
         val out = r.resolve("https://open.spotify.com/album/6N9PS4QXF1D0OWPk0Sxtb4") { println(it) }
         println(out)

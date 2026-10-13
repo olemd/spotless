@@ -19,7 +19,7 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Sideload-bygg: signeres med debug-nøkkelen med mindre du setter opp din egen.
+            // Sideload build: signed with the debug key unless you set up your own.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -32,7 +32,7 @@ android {
 }
 
 dependencies {
-    // org.json finnes i Android-runtime, men ikke på JVM under unit-tester.
+    // org.json is in the Android runtime, but not on the JVM during unit tests.
     testImplementation("org.json:json:20240303")
     testImplementation("junit:junit:4.13.2")
 }
