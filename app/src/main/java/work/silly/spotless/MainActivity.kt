@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
+import android.view.WindowInsets
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -74,7 +75,20 @@ class MainActivity : Activity() {
                 .putExtra(Intent.EXTRA_TEXT, test.text.toString()))
         }
 
-        setContentView(ScrollView(this).apply { addView(root) })
+        setContentView(ScrollView(this).apply {
+            addView(root)
+            // targetSdk 35 forces edge-to-edge on Android 15+: the window extends under the status/nav
+            // bars and no longer resizes for the keyboard, so pad by those insets ourselves.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                clipToPadding = false
+                setOnApplyWindowInsetsListener { v, insets ->
+                    val i = insets.getInsets(WindowInsets.Type.systemBars() or
+                        WindowInsets.Type.displayCutout() or WindowInsets.Type.ime())
+                    v.setPadding(i.left, i.top, i.right, i.bottom)
+                    WindowInsets.CONSUMED
+                }
+            }
+        })
     }
 
     override fun onResume() {
