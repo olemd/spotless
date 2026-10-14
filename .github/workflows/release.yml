@@ -1,11 +1,17 @@
 name: Release APK
 
 # Push a tag like v1.2.3 (or v1.2.3-rc1) to build, test and publish spotless-<version>.apk
-# on the matching GitHub Release. Run manually to just build and get the APK as a workflow artifact.
+# on the matching GitHub Release. Running it manually with a version does the same and creates
+# the tag on the commit it ran on; without a version it only builds a workflow artifact.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. 1.2.3 or 1.2.3-rc1 (empty: build only, no release)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -29,11 +35,27 @@ jobs:
 
       - name: Derive version
         id: version
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
+          tag=""
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            name="${GITHUB_REF_NAME#v}"
+            tag="$GITHUB_REF_NAME"
+          elif [[ -n "$VERSION_INPUT" ]]; then
+            tag="v${VERSION_INPUT#v}"
+            if [[ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]]; then
+              echo "::error::Releases are only made from $DEFAULT_BRANCH, not $GITHUB_REF_NAME"; exit 1
+            fi
+            # Never move an existing tag: that would rewrite a published release.
+            if [[ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]]; then
+              echo "::error::Tag $tag already exists"; exit 1
+            fi
+          fi
+          if [[ -n "$tag" ]]; then
+            name="${tag#v}"
             if [[ ! "$name" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-.+)?$ ]]; then
-              echo "::error::Tag '$GITHUB_REF_NAME' is not vMAJOR.MINOR.PATCH[-suffix]"; exit 1
+              echo "::error::'$tag' is not vMAJOR.MINOR.PATCH[-suffix]"; exit 1
             fi
             # MAJOR*10000 + MINOR*100 + PATCH, so minor/patch must stay below 100.
             code=$(( BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3] ))
@@ -43,10 +65,11 @@ jobs:
             code=1
             prerelease=true
           fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
-          echo "versionName=$name versionCode=$code prerelease=$prerelease"
+          echo "tag=${tag:-none} versionName=$name versionCode=$code prerelease=$prerelease"
 
       # Optional: without these secrets the APK is signed with a throwaway debug key, which
       # differs per build, so users must uninstall before every update.
@@ -87,15 +110,18 @@ jobs:
           path: ${{ steps.apk.outputs.file }}*
 
       - name: Publish to GitHub Release
-        if: github.ref_type == 'tag'
+        if: steps.version.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.version.outputs.tag }}
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
         run: |
           # Reuse a release created by hand in the UI, otherwise create one with generated notes.
+          # A manual run creates the tag on the commit it built (tags made with GITHUB_TOKEN
+          # don't trigger another run).
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            flags=(--generate-notes --verify-tag)
+            flags=(--generate-notes)
+            if [[ "$GITHUB_REF_TYPE" == tag ]]; then flags+=(--verify-tag); else flags+=(--target "$GITHUB_SHA"); fi
             [[ "$PRERELEASE" == true ]] && flags+=(--prerelease)
             gh release create "$TAG" "${flags[@]}"
           fi
