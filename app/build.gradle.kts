@@ -4,7 +4,9 @@ plugins {
 }
 
 // Release signing comes from the environment (set by CI); without it we fall back to the debug key.
-val releaseKeystore = System.getenv("SPOTLESS_KEYSTORE")?.let(::file)?.takeIf { it.isFile }
+// Unset GitHub secrets arrive as empty strings, so treat empty as missing.
+fun env(name: String) = System.getenv(name)?.takeIf { it.isNotEmpty() }
+val releaseKeystore = env("SPOTLESS_KEYSTORE")?.let(::file)?.takeIf { it.isFile }
 
 android {
     namespace = "work.silly.spotless"
@@ -22,9 +24,9 @@ android {
     signingConfigs {
         if (releaseKeystore != null) create("release") {
             storeFile = releaseKeystore
-            storePassword = System.getenv("SPOTLESS_KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("SPOTLESS_KEY_ALIAS")
-            keyPassword = System.getenv("SPOTLESS_KEY_PASSWORD") ?: System.getenv("SPOTLESS_KEYSTORE_PASSWORD")
+            storePassword = env("SPOTLESS_KEYSTORE_PASSWORD")
+            keyAlias = env("SPOTLESS_KEY_ALIAS")
+            keyPassword = env("SPOTLESS_KEY_PASSWORD") ?: storePassword
         }
     }
 
