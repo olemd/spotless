@@ -66,7 +66,7 @@ Version and signing can be overridden: `-PversionName=1.2.3 -PversionCode=10203`
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
-Running the workflow manually (*Actions → Release APK → Run workflow*) only builds and uploads the APK as a workflow artifact.
+Or run it from *Actions → Release APK → Run workflow* on `main` with a version (e.g. `0.2.0`): it creates the tag and release on that commit. It refuses to reuse an existing tag. Left empty, it only builds the APK as a workflow artifact.
 
 **Signing:** without secrets, CI signs with a fresh debug key every run, so Android refuses to update over a previous install. Create a key once and add it as repository secrets:
 
