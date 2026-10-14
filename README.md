@@ -56,7 +56,26 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew testDebugUnitTest -Dlive=true --rerun   # end-to-end against real services
 ```
 
-The release build is signed with the debug key (for sideloading). Set up your own `signingConfig` if you want to distribute it.
+Version and signing can be overridden: `-PversionName=1.2.3 -PversionCode=10203`, and a release keystore via the env vars `SPOTLESS_KEYSTORE`, `SPOTLESS_KEYSTORE_PASSWORD`, `SPOTLESS_KEY_ALIAS` and `SPOTLESS_KEY_PASSWORD` (defaults to the store password). Without a keystore the release build is signed with the debug key.
+
+## Releases
+
+`.github/workflows/release.yml` runs on tags `vMAJOR.MINOR.PATCH[-suffix]`: offline tests, release build, then `spotless-<version>.apk` + `.sha256` are attached to the GitHub Release (created with generated notes if it doesn't exist; a suffix like `-rc1` makes it a pre-release). `versionCode` is `MAJOR*10000 + MINOR*100 + PATCH`.
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+Running the workflow manually (*Actions → Release APK → Run workflow*) only builds and uploads the APK as a workflow artifact.
+
+**Signing:** without secrets, CI signs with a fresh debug key every run, so Android refuses to update over a previous install. Create a key once and add it as repository secrets:
+
+```sh
+keytool -genkeypair -keystore spotless.jks -alias spotless -keyalg RSA -keysize 4096 -validity 10000
+base64 -w0 spotless.jks   # -> SPOTLESS_KEYSTORE_BASE64
+```
+
+Secrets: `SPOTLESS_KEYSTORE_BASE64`, `SPOTLESS_KEYSTORE_PASSWORD`, `SPOTLESS_KEY_ALIAS` (`spotless`), and optionally `SPOTLESS_KEY_PASSWORD`. Keep the keystore safe: lose it and users have to uninstall to upgrade.
 
 ## License
 
